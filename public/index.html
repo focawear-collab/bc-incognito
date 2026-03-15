@@ -144,6 +144,10 @@
     .scale-btn.s4.active { background: rgba(34,197,94,0.12); border-color: #22c55e; color: #22c55e; }
     .scale-btn.s5.active { background: rgba(74,222,128,0.15); border-color: var(--green); color: var(--green); }
     .scale-extremes { display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--muted); margin-top: 4px; }
+    .toggle-btn { padding: 8px 18px; border-radius: 8px; border: 1px solid var(--border); background: var(--card2); color: var(--muted); font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+    .toggle-btn:hover { border-color: var(--gold); color: var(--gold); }
+    .toggle-btn.toggle-active { background: rgba(212,168,67,0.12); border-color: var(--gold); color: var(--gold); }
+    .toggle-btn.toggle-danger { background: rgba(248,113,113,0.12); border-color: var(--red); color: var(--red); }
 
     /* ── OBSERVATIONS ── */
     .obs-toggle {
@@ -323,9 +327,16 @@
           <div class="scale-extremes" style="max-width:300px;"><span>Deficiente</span><span>Excelente</span></div>
         </div>
       </div>
-      <!-- NUEVO: ¿Qué pediste? -->
+      <!-- Problema con plato -->
       <div class="form-group" style="grid-column: 1 / -1;">
-        <label>¿Qué pediste? <span style="color:var(--muted)">(plato principal · opcional)</span></label>
+        <label>¿Tuviste algún problema con algún plato?</label>
+        <div style="display:flex;gap:10px;margin-top:6px;">
+          <button type="button" id="btn-prob-no" class="toggle-btn toggle-active" onclick="setProblemaPlato(false)">No, todo bien</button>
+          <button type="button" id="btn-prob-si" class="toggle-btn" onclick="setProblemaPlato(true)">Sí, tuve un problema</button>
+        </div>
+      </div>
+      <div class="form-group" id="plato-field" style="grid-column: 1 / -1; display:none;">
+        <label>¿Qué pediste? <span style="color:var(--muted)">(plato con el problema)</span></label>
         <input id="f-plato" placeholder="ej: Calugas Coreanas L + Papas Fritas">
       </div>
     </div>
@@ -504,6 +515,24 @@ CATS.forEach(c => { state[c.id] = { sel: null, scale: null, obs: '', tiempoEsper
 let lastReport = null;
 let notaGarzon = null;
 let volveria = null;
+let problemaPlato = false;
+
+function setProblemaPlato(value) {
+  problemaPlato = value;
+  const field = document.getElementById('plato-field');
+  const btnNo = document.getElementById('btn-prob-no');
+  const btnSi = document.getElementById('btn-prob-si');
+  if (value) {
+    field.style.display = 'block';
+    btnSi.className = 'toggle-btn toggle-danger';
+    btnNo.className = 'toggle-btn';
+  } else {
+    field.style.display = 'none';
+    document.getElementById('f-plato').value = '';
+    btnNo.className = 'toggle-btn toggle-active';
+    btnSi.className = 'toggle-btn';
+  }
+}
 
 /* ══════════════════════════════════════════════
    RENDER FORM
