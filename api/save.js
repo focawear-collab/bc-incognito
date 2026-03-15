@@ -290,30 +290,35 @@ export default async function handler(req, res) {
       return res.status(notionRes.status).json({ error: notionResult.message || 'Notion API error' });
     }
 
-    // ── Send email via Resend (non-blocking — email failure won't break save) ─
+    // ── Send email via Resend ────────────────────────────────────────────────
+    let emailStatus = { skipped: true };
     if (RESEND_KEY) {
       const emailHtml = buildEmailHtml(d, catResults, notionResult.url);
       const subject   = `🕵️ CI ${d.local || ''} | ${d.fecha || ''} | ${d.totalScore || 0}% — ${d.band || ''}`;
-
-      fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${RESEND_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          from: 'BlackChicken CI <onboarding@resend.dev>',
-          to: ['jonathan@blackchicken.cl', 'llige@blackchicken.cl'],
-          subject,
-          html: emailHtml
-        })
-      }).then(r => r.json()).then(r => {
-        if (r.error) console.error('Resend error:', r.error);
-        else console.log('Email sent:', r.id);
-      }).catch(e => console.error('Email send failed:', e.message));
+      try {
+        const emailRes = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${RESEND_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            from: 'BlackChicken CI <onboarding@resend.dev>',
+            to: ['jonathan@blackchicken.cl', 'llige@blackchicken.cl'],
+            subject,
+            html: emailHtml
+          })
+        });
+        emailStatus = await emailRes.json();
+        if (emailStatus.error) console.error('Resend error:', JSON.stringify(emailStatus));
+        else console.log('Email sent:', emailStatus.id);
+      } catch (e) {
+        emailStatus = { error: e.message };
+        console.error('Email send failed:', e.message);
+      }
     }
 
-    return res.status(200).json({ success: true, pageId: notionResult.id, url: notionResult.url });
+    return res.status(200).json({ success: true, pageId: notionResult.id, url: notionResult.url, emailStatus });
 
   } catch (err) {
     console.error('Error:', err);
