@@ -573,18 +573,7 @@ function renderForm() {
           </div>
           <div class="scale-extremes"><span>${scaleMin}</span><span>${scaleMax}</span></div>
         </div>`;
-      // Time input for rapidez
-      if (cat.hasTimeInput) {
-        scaleHtml += `
-          <div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            <span style="font-size:0.74rem;color:var(--muted);">⏱️ Tiempo de espera aprox.:</span>
-            <input type="number" id="time-${cat.id}" min="0" max="120" placeholder="min"
-              style="width:80px;background:var(--card2);border:1.5px solid var(--border);color:var(--text);
-                     padding:7px 10px;border-radius:9px;font-size:0.88rem;font-family:inherit;text-align:center;"
-              oninput="state['${cat.id}'].tiempoEspera=this.value?parseInt(this.value):null">
-            <span style="font-size:0.74rem;color:var(--muted);">minutos</span>
-          </div>`;
-      }
+      // Time input for rapidez — removed
     }
 
     // Obs HTML
@@ -796,13 +785,6 @@ function generateResults() {
         <span style="font-size:1.15rem;font-weight:800;color:${scoreColor(lastReport.volveria, 5)}">${lastReport.volveria}/5</span>
       </div>`;
     }
-    if (lastReport.tiempoEspera) {
-      const tColor = lastReport.tiempoEspera <= 10 ? 'var(--green)' : lastReport.tiempoEspera <= 20 ? 'var(--yellow)' : 'var(--red)';
-      h += `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;">
-        <span style="font-size:0.82rem;">⏱️ Tiempo de espera</span>
-        <span style="font-size:1.15rem;font-weight:800;color:${tColor}">${lastReport.tiempoEspera} min</span>
-      </div>`;
-    }
     h += `</div>`;
   }
 
@@ -829,8 +811,7 @@ function generateResults() {
       const color = cat.score === 50 ? 'var(--yellow)' : 'var(--red)';
       const cleanText = cat.selText.replace(/✅|⚠️|❌|🔥|❄️/g, '').trim();
       const extraTags = [
-        cat.scale ? `<span style="font-size:0.72rem;background:var(--card2);padding:2px 8px;border-radius:6px;color:var(--muted)">Escala: ${cat.scale}/5</span>` : '',
-        cat.id === 'rapidez' && cat.tiempoEspera ? `<span style="font-size:0.72rem;background:var(--card2);padding:2px 8px;border-radius:6px;color:var(--muted)">⏱️ ${cat.tiempoEspera} min</span>` : ''
+        cat.scale ? `<span style="font-size:0.72rem;background:var(--card2);padding:2px 8px;border-radius:6px;color:var(--muted)">Escala: ${cat.scale}/5</span>` : ''
       ].filter(Boolean).join(' ');
       h += `<div class="alert-item">
         <div class="alert-header">
