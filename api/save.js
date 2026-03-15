@@ -1,3 +1,5 @@
+import nodemailer from 'nodemailer';
+
 // ─── helpers ────────────────────────────────────────────────────────────────
 
 function bandColor(score) {
@@ -155,8 +157,7 @@ export default async function handler(req, res) {
 
   const NOTION_TOKEN  = process.env.NOTION_TOKEN;
   const DATABASE_ID   = process.env.NOTION_DB_ID_CI;
-  const RESEND_KEY    = process.env.RESEND_API_KEY;
-  const REPORT_EMAIL  = process.env.REPORT_EMAIL || 'focawear@gmail.com';
+  const GMAIL_PASS    = process.env.GMAIL_APP_PASSWORD;
 
   if (!NOTION_TOKEN || !DATABASE_ID) {
     return res.status(500).json({ error: 'Missing Notion configuration' });
@@ -290,28 +291,24 @@ export default async function handler(req, res) {
       return res.status(notionRes.status).json({ error: notionResult.message || 'Notion API error' });
     }
 
-    // ── Send email via Resend ────────────────────────────────────────────────
+    // ── Send email via Gmail SMTP ────────────────────────────────────────────
     let emailStatus = { skipped: true };
-    if (RESEND_KEY) {
+    if (GMAIL_PASS) {
       const emailHtml = buildEmailHtml(d, catResults, notionResult.url);
       const subject   = `🕵️ CI ${d.local || ''} | ${d.fecha || ''} | ${d.totalScore || 0}% — ${d.band || ''}`;
       try {
-        const emailRes = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${RESEND_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            from: 'BlackChicken CI <onboarding@resend.dev>',
-            to: ['focawear@gmail.com'],
-            subject,
-            html: emailHtml
-          })
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: { user: 'focawear@gmail.com', pass: GMAIL_PASS }
         });
-        emailStatus = await emailRes.json();
-        if (emailStatus.error) console.error('Resend error:', JSON.stringify(emailStatus));
-        else console.log('Email sent:', emailStatus.id);
+        const info = await transporter.sendMail({
+          from: '"BlackChicken CI 🕵️" <focawear@gmail.com>',
+          to: 'jonathan@blackchicken.cl, llige@blackchicken.cl',
+          subject,
+          html: emailHtml
+        });
+        emailStatus = { id: info.messageId };
+        console.log('Email sent:', info.messageId);
       } catch (e) {
         emailStatus = { error: e.message };
         console.error('Email send failed:', e.message);
