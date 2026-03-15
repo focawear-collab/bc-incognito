@@ -67,13 +67,15 @@ export default async function handler(req, res) {
 
     catResults.forEach(cat => {
       const status = cat.score === 100 ? '✅' : cat.score === 50 ? '⚠️' : '❌';
-      const scaleStr = cat.scale ? ` (rapidez: ${cat.scale}/5)` : '';
+      const scaleLabel = cat.id === 'rapidez' ? 'velocidad' : cat.id === 'calidad' ? 'calidad' : 'escala';
+      const scaleStr = cat.scale ? ` (${scaleLabel}: ${cat.scale}/5)` : '';
+      const tiempoStr = cat.tiempoEspera != null ? ` — espera: ${cat.tiempoEspera} min` : '';
       const cleanText = (cat.selText || '').replace(/✅|⚠️|❌|🔥|❄️/g, '').trim();
       blocks.push({
         object: 'block', type: 'bulleted_list_item',
         bulleted_list_item: {
           rich_text: [
-            { text: { content: `${status} ${cat.name}${scaleStr}: ` }, annotations: { bold: true } },
+            { text: { content: `${status} ${cat.name}${scaleStr}${tiempoStr}: ` }, annotations: { bold: true } },
             { text: { content: cleanText } }
           ]
         }
@@ -85,6 +87,59 @@ export default async function handler(req, res) {
         });
       }
     });
+
+    // Additional indicators (new fields)
+    const hasAdditional = d.platoPedido || d.tiempoEspera != null || d.notaGarzon || d.volveria;
+    if (hasAdditional) {
+      blocks.push({
+        object: 'block', type: 'heading_3',
+        heading_3: { rich_text: [{ text: { content: 'Indicadores clave' } }] }
+      });
+
+      if (d.platoPedido) {
+        blocks.push({
+          object: 'block', type: 'bulleted_list_item',
+          bulleted_list_item: { rich_text: [
+            { text: { content: '🍗 Plato pedido: ' }, annotations: { bold: true } },
+            { text: { content: d.platoPedido } }
+          ]}
+        });
+      }
+
+      if (d.tiempoEspera != null) {
+        const tVal = Number(d.tiempoEspera);
+        const tIcon = tVal <= 10 ? '✅' : tVal <= 20 ? '⚠️' : '❌';
+        blocks.push({
+          object: 'block', type: 'bulleted_list_item',
+          bulleted_list_item: { rich_text: [
+            { text: { content: '⏱️ Tiempo de espera: ' }, annotations: { bold: true } },
+            { text: { content: `${tVal} min ${tIcon}` } }
+          ]}
+        });
+      }
+
+      if (d.notaGarzon) {
+        const stars = '★'.repeat(d.notaGarzon) + '☆'.repeat(5 - d.notaGarzon);
+        blocks.push({
+          object: 'block', type: 'bulleted_list_item',
+          bulleted_list_item: { rich_text: [
+            { text: { content: '⭐ Nota al garzón/a: ' }, annotations: { bold: true } },
+            { text: { content: `${d.notaGarzon}/5 ${stars}` } }
+          ]}
+        });
+      }
+
+      if (d.volveria) {
+        const stars = '★'.repeat(d.volveria) + '☆'.repeat(5 - d.volveria);
+        blocks.push({
+          object: 'block', type: 'bulleted_list_item',
+          bulleted_list_item: { rich_text: [
+            { text: { content: '🔁 ¿Volvería?: ' }, annotations: { bold: true } },
+            { text: { content: `${d.volveria}/5 ${stars}` } }
+          ]}
+        });
+      }
+    }
 
     // General comment
     if (d.general) {

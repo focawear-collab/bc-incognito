@@ -160,6 +160,13 @@
     .obs-area:focus { outline: none; border-color: var(--gold); }
     .obs-area.visible { display: block; }
 
+    /* ── STANDALONE SCALE (notaGarzon / volveria) ── */
+    .standalone-scale {
+      background: var(--card); border: 1.5px solid var(--border);
+      border-radius: 12px; padding: 14px 16px; margin-top: 4px;
+    }
+    .standalone-scale .scale-row { max-width: 300px; }
+
     /* ── BUTTONS ── */
     .btn {
       padding: 12px 26px; border-radius: 10px; font-weight: 600;
@@ -301,13 +308,32 @@
         <label>Garzón/a que te atendió <span style="color:var(--muted)">(opcional)</span></label>
         <input id="f-garzon" placeholder="Nombre del garzón observado">
       </div>
+      <!-- NUEVO: Nota del garzón -->
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label>Nota al garzón/a <span style="color:var(--muted)">(si aplica · 1 = deficiente · 5 = excelente)</span></label>
+        <div class="standalone-scale">
+          <div class="scale-row">
+            <button class="scale-btn s1" id="sc-notaGarzon-1" onclick="setNotaGarzon(1)">1</button>
+            <button class="scale-btn s2" id="sc-notaGarzon-2" onclick="setNotaGarzon(2)">2</button>
+            <button class="scale-btn s3" id="sc-notaGarzon-3" onclick="setNotaGarzon(3)">3</button>
+            <button class="scale-btn s4" id="sc-notaGarzon-4" onclick="setNotaGarzon(4)">4</button>
+            <button class="scale-btn s5" id="sc-notaGarzon-5" onclick="setNotaGarzon(5)">5</button>
+          </div>
+          <div class="scale-extremes" style="max-width:300px;"><span>Deficiente</span><span>Excelente</span></div>
+        </div>
+      </div>
+      <!-- NUEVO: ¿Qué pediste? -->
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label>¿Qué pediste? <span style="color:var(--muted)">(plato principal · opcional)</span></label>
+        <input id="f-plato" placeholder="ej: Calugas Coreanas L + Papas Fritas">
+      </div>
     </div>
 
     <div class="section-title"><span class="num">2</span> Evaluación de Experiencia</div>
 
     <div class="progress-wrap">
       <div class="progress-meta">
-        <span id="progress-label">0 de 8 categorías evaluadas</span>
+        <span id="progress-label">0 de 10 categorías evaluadas</span>
         <span id="progress-pct" style="color: var(--gold); font-weight: 600;">0%</span>
       </div>
       <div class="progress-track">
@@ -318,6 +344,22 @@
     <div id="eval-container"></div>
 
     <div class="section-title"><span class="num">3</span> Impresión General</div>
+
+    <!-- NUEVO: ¿Volvería? -->
+    <div class="form-group" style="margin-bottom: 16px;">
+      <label>¿Volverías a este local? <span style="color:var(--muted)">(1 = nunca · 5 = definitivamente)</span></label>
+      <div class="standalone-scale">
+        <div class="scale-row">
+          <button class="scale-btn s1" id="sc-volveria-1" onclick="setVolveria(1)">1</button>
+          <button class="scale-btn s2" id="sc-volveria-2" onclick="setVolveria(2)">2</button>
+          <button class="scale-btn s3" id="sc-volveria-3" onclick="setVolveria(3)">3</button>
+          <button class="scale-btn s4" id="sc-volveria-4" onclick="setVolveria(4)">4</button>
+          <button class="scale-btn s5" id="sc-volveria-5" onclick="setVolveria(5)">5</button>
+        </div>
+        <div class="scale-extremes" style="max-width:300px;"><span>Nunca volvería</span><span>Definitivamente sí</span></div>
+      </div>
+    </div>
+
     <div class="form-group">
       <label>Comentario libre <span style="color:var(--muted)">(opcional)</span></label>
       <textarea id="f-general" rows="3" placeholder="¿Algo destacado que no esté cubierto en las preguntas anteriores?"></textarea>
@@ -380,6 +422,8 @@ const CATS = [
       { text: 'Esperé más de 15–20 minutos para ser atendido', type: 'neg', score: 0 }
     ],
     hasScale: true, scaleLabel: 'Califica la rapidez del servicio',
+    scaleMin: 'Muy lento', scaleMax: 'Muy rápido',
+    hasTimeInput: true,
     hasObs: false
   },
   {
@@ -389,6 +433,18 @@ const CATS = [
       { text: 'Los entregaron antes de que llegara la comida ✅', type: 'pos', score: 100 },
       { text: 'Se olvidaron — me trajeron la comida primero ❌', type: 'neg', score: 0 }
     ],
+    hasObs: true
+  },
+  {
+    id: 'calidad', icon: '🍗', name: 'Calidad de la comida',
+    desc: 'Sabor, presentación y porción del plato.',
+    opts: [
+      { text: 'Excelente — sabor destacado y presentación impecable', type: 'pos', score: 100 },
+      { text: 'Bueno — sabor correcto, dentro de lo esperado', type: 'neu', score: 50 },
+      { text: 'Deficiente — sabor bajo, mala presentación o porción incorrecta', type: 'neg', score: 0 }
+    ],
+    hasScale: true, scaleLabel: 'Califica la calidad general del plato',
+    scaleMin: 'Muy malo', scaleMax: 'Excelente',
     hasObs: true
   },
   {
@@ -406,6 +462,16 @@ const CATS = [
     opts: [
       { text: 'La comida llegó con la temperatura esperada 🔥', type: 'pos', score: 100 },
       { text: 'La comida llegó tibia o fría ❄️', type: 'neg', score: 0 }
+    ],
+    hasObs: true
+  },
+  {
+    id: 'upselling', icon: '💬', name: 'Upselling activo',
+    desc: '¿Te ofrecieron bebidas, entrada, postre u otros productos adicionales?',
+    opts: [
+      { text: 'Sí — me ofrecieron al menos una bebida, entrada o postre adicional', type: 'pos', score: 100 },
+      { text: 'Parcialmente — hizo mención breve pero sin esfuerzo', type: 'neu', score: 50 },
+      { text: 'No — solo tomó el pedido sin ofrecer nada más', type: 'neg', score: 0 }
     ],
     hasObs: true
   },
@@ -433,8 +499,10 @@ const CATS = [
    STATE
 ══════════════════════════════════════════════ */
 const state = {};
-CATS.forEach(c => { state[c.id] = { sel: null, scale: null, obs: '' }; });
+CATS.forEach(c => { state[c.id] = { sel: null, scale: null, obs: '', tiempoEspera: null }; });
 let lastReport = null;
+let notaGarzon = null;
+let volveria = null;
 
 /* ══════════════════════════════════════════════
    RENDER FORM
@@ -463,16 +531,30 @@ function renderForm() {
     let scaleHtml = '';
     if (cat.hasScale) {
       const scaleColors = ['s1','s2','s3','s4','s5'];
+      const scaleMin = cat.scaleMin || 'Mínimo';
+      const scaleMax = cat.scaleMax || 'Máximo';
       scaleHtml = `
         <div class="scale-wrap">
-          <div class="scale-label-text">${cat.scaleLabel} (1 = muy lento, 5 = muy rápido)</div>
+          <div class="scale-label-text">${cat.scaleLabel} (1 = ${scaleMin.toLowerCase()}, 5 = ${scaleMax.toLowerCase()})</div>
           <div class="scale-row">
             ${[1,2,3,4,5].map(s => `
               <button class="scale-btn ${scaleColors[s-1]}" id="sc-${cat.id}-${s}" onclick="setScale('${cat.id}',${s})">${s}</button>
             `).join('')}
           </div>
-          <div class="scale-extremes"><span>Muy lento</span><span>Muy rápido</span></div>
+          <div class="scale-extremes"><span>${scaleMin}</span><span>${scaleMax}</span></div>
         </div>`;
+      // Time input for rapidez
+      if (cat.hasTimeInput) {
+        scaleHtml += `
+          <div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span style="font-size:0.74rem;color:var(--muted);">⏱️ Tiempo de espera aprox.:</span>
+            <input type="number" id="time-${cat.id}" min="0" max="120" placeholder="min"
+              style="width:80px;background:var(--card2);border:1.5px solid var(--border);color:var(--text);
+                     padding:7px 10px;border-radius:9px;font-size:0.88rem;font-family:inherit;text-align:center;"
+              oninput="state['${cat.id}'].tiempoEspera=this.value?parseInt(this.value):null">
+            <span style="font-size:0.74rem;color:var(--muted);">minutos</span>
+          </div>`;
+      }
     }
 
     // Obs HTML
@@ -503,6 +585,7 @@ function renderForm() {
   });
 
   document.getElementById('f-fecha').value = new Date().toISOString().split('T')[0];
+  updateProgress();
 }
 
 /* ══════════════════════════════════════════════
@@ -529,10 +612,8 @@ function selectOpt(catId, oi) {
   else if (opt.score === 50) { badge.className = 'status-badge parcial'; badge.textContent = '~ Parcial'; }
   else { badge.className = 'status-badge falla'; badge.textContent = '✗ Falla'; }
 
-  // Card answered
   document.getElementById('card-' + catId).classList.add('answered');
   document.getElementById('card-' + catId).classList.remove('unanswered-error');
-
   updateProgress();
 }
 
@@ -540,8 +621,23 @@ function setScale(catId, val) {
   state[catId].scale = val;
   for (let s = 1; s <= 5; s++) {
     const btn = document.getElementById(`sc-${catId}-${s}`);
-    const baseClass = `scale-btn s${s}`;
-    btn.className = baseClass + (s === val ? ' active' : '');
+    btn.className = `scale-btn s${s}` + (s === val ? ' active' : '');
+  }
+}
+
+function setNotaGarzon(val) {
+  notaGarzon = val;
+  for (let s = 1; s <= 5; s++) {
+    const btn = document.getElementById(`sc-notaGarzon-${s}`);
+    if (btn) btn.className = `scale-btn s${s}` + (s === val ? ' active' : '');
+  }
+}
+
+function setVolveria(val) {
+  volveria = val;
+  for (let s = 1; s <= 5; s++) {
+    const btn = document.getElementById(`sc-volveria-${s}`);
+    if (btn) btn.className = `scale-btn s${s}` + (s === val ? ' active' : '');
   }
 }
 
@@ -585,7 +681,7 @@ function generateResults() {
     return {
       id: cat.id, icon: cat.icon, name: cat.name,
       selText: opt.text, type: opt.type, score: opt.score,
-      scale: s.scale, obs: s.obs
+      scale: s.scale, obs: s.obs, tiempoEspera: s.tiempoEspera
     };
   });
 
@@ -608,6 +704,10 @@ function generateResults() {
     turno: document.getElementById('f-turno').value,
     evaluador: document.getElementById('f-evaluador').value.trim() || 'Anónimo',
     garzon: document.getElementById('f-garzon').value.trim(),
+    platoPedido: document.getElementById('f-plato').value.trim(),
+    notaGarzon,
+    volveria,
+    tiempoEspera: state['rapidez'].tiempoEspera,
     general: document.getElementById('f-general').value.trim(),
     totalScore, band, ok, fallas, parcial, catResults
   };
@@ -621,6 +721,7 @@ function generateResults() {
     <div class="info-item">Fecha: <strong>${lastReport.fecha}</strong></div>
     <div class="info-item">Turno: <strong>${lastReport.turno}</strong></div>
     ${lastReport.garzon ? `<div class="info-item">Garzón: <strong>${lastReport.garzon}</strong></div>` : ''}
+    ${lastReport.platoPedido ? `<div class="info-item">Plato: <strong>${lastReport.platoPedido}</strong></div>` : ''}
     <div class="info-item">Evaluador: <strong>${lastReport.evaluador}</strong></div>
   </div>`;
 
@@ -644,6 +745,37 @@ function generateResults() {
     </div>
   </div>`;
 
+  // Indicadores clave (notaGarzon + volveria)
+  if (lastReport.notaGarzon || lastReport.volveria || lastReport.tiempoEspera) {
+    const scoreColor = (v, max5) => {
+      if (!v) return 'var(--muted)';
+      const r = v / max5;
+      return r >= 0.8 ? 'var(--green)' : r >= 0.6 ? 'var(--yellow)' : 'var(--red)';
+    };
+    h += `<div class="r-card">
+      <div style="font-size:0.85rem;font-weight:600;margin-bottom:14px;">📊 Indicadores clave</div>`;
+    if (lastReport.notaGarzon) {
+      h += `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);">
+        <span style="font-size:0.82rem;">👤 Nota garzón/a</span>
+        <span style="font-size:1.15rem;font-weight:800;color:${scoreColor(lastReport.notaGarzon, 5)}">${lastReport.notaGarzon}/5</span>
+      </div>`;
+    }
+    if (lastReport.volveria) {
+      h += `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);">
+        <span style="font-size:0.82rem;">🔄 ¿Volvería?</span>
+        <span style="font-size:1.15rem;font-weight:800;color:${scoreColor(lastReport.volveria, 5)}">${lastReport.volveria}/5</span>
+      </div>`;
+    }
+    if (lastReport.tiempoEspera) {
+      const tColor = lastReport.tiempoEspera <= 10 ? 'var(--green)' : lastReport.tiempoEspera <= 20 ? 'var(--yellow)' : 'var(--red)';
+      h += `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;">
+        <span style="font-size:0.82rem;">⏱️ Tiempo de espera</span>
+        <span style="font-size:1.15rem;font-weight:800;color:${tColor}">${lastReport.tiempoEspera} min</span>
+      </div>`;
+    }
+    h += `</div>`;
+  }
+
   // Category breakdown
   h += '<div class="r-card"><div style="font-size:0.85rem;font-weight:600;margin-bottom:12px;">Detalle por categoría</div>';
   catResults.forEach(cat => {
@@ -666,11 +798,15 @@ function generateResults() {
     issues.forEach(cat => {
       const color = cat.score === 50 ? 'var(--yellow)' : 'var(--red)';
       const cleanText = cat.selText.replace(/✅|⚠️|❌|🔥|❄️/g, '').trim();
+      const extraTags = [
+        cat.scale ? `<span style="font-size:0.72rem;background:var(--card2);padding:2px 8px;border-radius:6px;color:var(--muted)">Escala: ${cat.scale}/5</span>` : '',
+        cat.id === 'rapidez' && cat.tiempoEspera ? `<span style="font-size:0.72rem;background:var(--card2);padding:2px 8px;border-radius:6px;color:var(--muted)">⏱️ ${cat.tiempoEspera} min</span>` : ''
+      ].filter(Boolean).join(' ');
       h += `<div class="alert-item">
         <div class="alert-header">
           <span>${cat.icon}</span>
           <span style="font-size:0.85rem;font-weight:600;color:${color}">${cat.name}</span>
-          ${cat.scale ? `<span style="font-size:0.72rem;background:var(--card2);padding:2px 8px;border-radius:6px;color:var(--muted)">Rapidez: ${cat.scale}/5</span>` : ''}
+          ${extraTags}
         </div>
         <div class="alert-text">${cleanText}</div>
         ${cat.obs ? `<div class="obs-box">${cat.obs}</div>` : ''}
@@ -679,7 +815,7 @@ function generateResults() {
     h += '</div>';
   }
 
-  // All observations with comments
+  // All observations with comments (positive)
   const withObs = catResults.filter(c => c.obs && c.obs.trim() && c.score === 100);
   if (withObs.length > 0) {
     h += `<div class="r-card r-full"><div style="font-size:0.85rem;font-weight:600;margin-bottom:12px;">💬 Observaciones adicionales</div>`;
@@ -760,11 +896,22 @@ async function saveToNotion() {
    UTILS
 ══════════════════════════════════════════════ */
 function resetForm() {
-  CATS.forEach(c => { state[c.id] = { sel: null, scale: null, obs: '' }; });
+  CATS.forEach(c => { state[c.id] = { sel: null, scale: null, obs: '', tiempoEspera: null }; });
+  notaGarzon = null;
+  volveria = null;
+  // Reset standalone scale buttons
+  ['notaGarzon', 'volveria'].forEach(key => {
+    for (let s = 1; s <= 5; s++) {
+      const btn = document.getElementById(`sc-${key}-${s}`);
+      if (btn) btn.className = `scale-btn s${s}`;
+    }
+  });
   renderForm();
-  ['f-evaluador','f-garzon','f-general'].forEach(id => document.getElementById(id).value = '');
+  ['f-evaluador','f-garzon','f-general','f-plato'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
   document.getElementById('f-fecha').value = new Date().toISOString().split('T')[0];
-  updateProgress();
 }
 
 function newEvaluation() {
@@ -790,4 +937,3 @@ renderForm();
 </script>
 </body>
 </html>
-<\!-- deploy test 20260315013430 -->
