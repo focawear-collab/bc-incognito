@@ -260,6 +260,7 @@
       .btn-row, .toast, .notion-badge { display: none !important; }
     }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -377,7 +378,7 @@
   <div id="phase-dash" class="phase">
     <div id="dash-content" class="fade-in"></div>
     <div class="btn-row" style="margin-top: 24px;">
-      <button class="btn btn-outline" onclick="window.print()">🖨 Imprimir</button>
+      <button class="btn btn-outline" onclick="downloadPDF()">📄 Descargar PDF</button>
       <button class="btn btn-gold" onclick="newEvaluation()">+ Nueva Evaluación</button>
     </div>
     <div id="notion-badge" class="notion-badge">
@@ -879,9 +880,9 @@ async function saveToNotion() {
     });
     const data = await resp.json();
     if (data.success) {
-      text.textContent = '✅ Guardado en Notion';
+      text.textContent = '✅ Guardado en Notion · 📧 Email enviado';
       badge.style.borderColor = '#22c55e';
-      showToast('Evaluación guardada correctamente', 'success');
+      showToast('Evaluación guardada y email enviado', 'success');
     } else {
       text.textContent = '❌ ' + (data.error || 'Error al guardar');
       badge.style.borderColor = '#ef4444';
@@ -890,6 +891,30 @@ async function saveToNotion() {
     text.textContent = '❌ Error de conexión';
     badge.style.borderColor = '#ef4444';
   }
+}
+
+/* ══════════════════════════════════════════════
+   DOWNLOAD PDF
+══════════════════════════════════════════════ */
+function downloadPDF() {
+  const el = document.getElementById('dash-content');
+  if (!el) return;
+  const fecha = (lastReport && lastReport.fecha) || new Date().toISOString().split('T')[0];
+  const local = (lastReport && lastReport.local) || 'BC';
+  const filename = `CI_${local}_${fecha}.pdf`;
+  const btn = event.currentTarget;
+  btn.disabled = true;
+  btn.textContent = '⏳ Generando...';
+  html2pdf().set({
+    margin: 10,
+    filename,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, backgroundColor: '#0f0f0f', useCORS: true, logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  }).from(el).save().then(() => {
+    btn.disabled = false;
+    btn.textContent = '📄 Descargar PDF';
+  });
 }
 
 /* ══════════════════════════════════════════════
