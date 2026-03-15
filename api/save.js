@@ -303,7 +303,7 @@ export default async function handler(req, res) {
         },
         body: JSON.stringify({
           from: 'BlackChicken CI <onboarding@resend.dev>',
-          to: [REPORT_EMAIL],
+          to: ['jonathan@blackchicken.cl', 'llige@blackchicken.cl'],
           subject,
           html: emailHtml
         })
