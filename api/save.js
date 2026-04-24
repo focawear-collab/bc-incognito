@@ -191,6 +191,7 @@ export default async function handler(req, res) {
       "Temperatura":       { select: { name: getResult('temperatura') } },
       "Retiro de Platos":  { select: { name: getResult('retiro') } },
       "Valoraciones Google": { select: { name: getResult('valoraciones') } },
+      "Club Fidelización":   { select: { name: getResult('fidelizacion') } },
     };
     if (d.garzon)  properties["Garzón"]            = { rich_text: [{ text: { content: d.garzon } }] };
     if (d.general) properties["Comentario General"] = { rich_text: [{ text: { content: d.general.substring(0, 2000) } }] };
