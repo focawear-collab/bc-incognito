@@ -887,6 +887,32 @@ function generateResults() {
 }
 
 /* ══════════════════════════════════════════════
+   PDF HELPER — captura sin offset de scroll
+══════════════════════════════════════════════ */
+function buildPdfWorker(cloneEl) {
+  return html2pdf().set({
+    margin: 10,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, backgroundColor: '#0f0f0f', useCORS: true, logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  }).from(cloneEl);
+}
+
+function createPdfClone() {
+  const source = document.getElementById('dash-content');
+  const clone = source.cloneNode(true);
+  clone.style.cssText = `
+    position: fixed; top: 0; left: 0;
+    width: ${source.offsetWidth}px;
+    background: #0f0f0f;
+    z-index: -9999;
+    pointer-events: none;
+  `;
+  document.body.appendChild(clone);
+  return clone;
+}
+
+/* ══════════════════════════════════════════════
    SAVE TO NOTION
 ══════════════════════════════════════════════ */
 async function saveToNotion() {
@@ -899,21 +925,9 @@ async function saveToNotion() {
   // Generar PDF como base64 para adjuntar al email
   let pdfBase64 = null;
   try {
-    const el = document.getElementById('dash-content');
-    const pdfWorker = html2pdf().set({
-      margin: 10,
-      image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: {
-        scale: 2,
-        backgroundColor: '#0f0f0f',
-        useCORS: true,
-        logging: false,
-        scrollY: -window.scrollY,
-        windowWidth: document.documentElement.offsetWidth
-      },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    }).from(el);
-    const blob = await pdfWorker.outputPdf('blob');
+    const clone = createPdfClone();
+    const blob = await buildPdfWorker(clone).outputPdf('blob');
+    document.body.removeChild(clone);
     const reader = new FileReader();
     pdfBase64 = await new Promise((resolve) => {
       reader.onloadend = () => resolve(reader.result.split(',')[1]);
@@ -950,28 +964,20 @@ async function saveToNotion() {
    DOWNLOAD PDF
 ══════════════════════════════════════════════ */
 function downloadPDF() {
-  const el = document.getElementById('dash-content');
-  if (!el) return;
+  if (!document.getElementById('dash-content')) return;
   const fecha = (lastReport && lastReport.fecha) || new Date().toISOString().split('T')[0];
   const local = (lastReport && lastReport.local) || 'BC';
   const filename = `CI_${local}_${fecha}.pdf`;
   const btn = event.currentTarget;
   btn.disabled = true;
   btn.textContent = '⏳ Generando...';
-  html2pdf().set({
-    margin: 10,
-    filename,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: {
-      scale: 2,
-      backgroundColor: '#0f0f0f',
-      useCORS: true,
-      logging: false,
-      scrollY: -window.scrollY,
-      windowWidth: document.documentElement.offsetWidth
-    },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  }).from(el).save().then(() => {
+  const clone = createPdfClone();
+  buildPdfWorker(clone).save(filename).then(() => {
+    document.body.removeChild(clone);
+    btn.disabled = false;
+    btn.textContent = '📄 Descargar PDF';
+  }).catch(() => {
+    document.body.removeChild(clone);
     btn.disabled = false;
     btn.textContent = '📄 Descargar PDF';
   });
