@@ -288,7 +288,7 @@
     <div class="id-grid">
       <div class="form-group">
         <label>Local evaluado</label>
-        <select id="f-local">
+        <select id="f-local" onchange="updateBC1Cards()">
           <option value="BC1">BC1 — Cerro El Plomo 5931</option>
           <option value="BC2">BC2 — Cerro El Plomo 5630</option>
         </select>
@@ -517,7 +517,8 @@ const CATS = [
       { text: 'Sí — me invitaron a unirme al club de fidelización', type: 'pos', score: 100 },
       { text: 'No — no me mencionaron el club', type: 'neg', score: 0 }
     ],
-    hasObs: false
+    hasObs: false,
+    onlyBC1: true
   }
 ];
 
@@ -551,6 +552,17 @@ function setProblemaPlato(value) {
 /* ══════════════════════════════════════════════
    RENDER FORM
 ══════════════════════════════════════════════ */
+function updateBC1Cards() {
+  const local = document.getElementById('f-local').value;
+  CATS.forEach(cat => {
+    if (cat.onlyBC1) {
+      const card = document.getElementById('card-' + cat.id);
+      if (card) card.style.display = local === 'BC1' ? '' : 'none';
+    }
+  });
+  updateProgress();
+}
+
 function renderForm() {
   const container = document.getElementById('eval-container');
   container.innerHTML = '';
@@ -684,11 +696,17 @@ function toggleObs(catId, toggle) {
   if (!isOpen) area.focus();
 }
 
+function activeCats() {
+  const local = document.getElementById('f-local') ? document.getElementById('f-local').value : 'BC1';
+  return CATS.filter(c => !c.onlyBC1 || local === 'BC1');
+}
+
 function updateProgress() {
-  const answered = CATS.filter(c => state[c.id].sel !== null).length;
-  const pct = Math.round((answered / CATS.length) * 100);
+  const cats = activeCats();
+  const answered = cats.filter(c => state[c.id].sel !== null).length;
+  const pct = Math.round((answered / cats.length) * 100);
   document.getElementById('progress-fill').style.width = pct + '%';
-  document.getElementById('progress-label').textContent = `${answered} de ${CATS.length} categorías evaluadas`;
+  document.getElementById('progress-label').textContent = `${answered} de ${cats.length} categorías evaluadas`;
   document.getElementById('progress-pct').textContent = pct + '%';
 }
 
@@ -696,7 +714,7 @@ function updateProgress() {
    GENERATE RESULTS
 ══════════════════════════════════════════════ */
 function generateResults() {
-  const unanswered = CATS.filter(c => state[c.id].sel === null);
+  const unanswered = activeCats().filter(c => state[c.id].sel === null);
   if (unanswered.length > 0) {
     unanswered.forEach(c => {
       const card = document.getElementById('card-' + c.id);
@@ -708,7 +726,7 @@ function generateResults() {
     return;
   }
 
-  const catResults = CATS.map(cat => {
+  const catResults = activeCats().map(cat => {
     const s = state[cat.id];
     const opt = cat.opts[s.sel];
     return {
