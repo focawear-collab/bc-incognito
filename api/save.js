@@ -301,12 +301,22 @@ export default async function handler(req, res) {
           service: 'gmail',
           auth: { user: 'focawear@gmail.com', pass: GMAIL_PASS }
         });
-        const info = await transporter.sendMail({
+        const mailOptions = {
           from: '"BlackChicken CI 🕵️" <focawear@gmail.com>',
           to: 'jonathan@blackchicken.cl, llige@blackchicken.cl',
           subject,
           html: emailHtml
-        });
+        };
+        if (d.pdfBase64) {
+          const pdfFilename = `CI_${d.local || 'BC'}_${d.fecha || new Date().toISOString().split('T')[0]}.pdf`;
+          mailOptions.attachments = [{
+            filename: pdfFilename,
+            content: d.pdfBase64,
+            encoding: 'base64',
+            contentType: 'application/pdf'
+          }];
+        }
+        const info = await transporter.sendMail(mailOptions);
         emailStatus = { id: info.messageId };
         console.log('Email sent:', info.messageId);
       } catch (e) {

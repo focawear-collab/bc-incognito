@@ -885,13 +885,42 @@ async function saveToNotion() {
   const badge = document.getElementById('notion-badge');
   const text = document.getElementById('notion-text');
   badge.classList.add('visible');
+  text.textContent = '⏳ Generando PDF...';
+
+  // Generar PDF como base64 para adjuntar al email
+  let pdfBase64 = null;
+  try {
+    const el = document.getElementById('dash-content');
+    const pdfWorker = html2pdf().set({
+      margin: 10,
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: {
+        scale: 2,
+        backgroundColor: '#0f0f0f',
+        useCORS: true,
+        logging: false,
+        scrollY: -window.scrollY,
+        windowWidth: document.documentElement.offsetWidth
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    }).from(el);
+    const blob = await pdfWorker.outputPdf('blob');
+    const reader = new FileReader();
+    pdfBase64 = await new Promise((resolve) => {
+      reader.onloadend = () => resolve(reader.result.split(',')[1]);
+      reader.readAsDataURL(blob);
+    });
+  } catch (e) {
+    console.warn('PDF generation for email failed:', e);
+  }
+
   text.textContent = '⏳ Guardando en Notion...';
 
   try {
     const resp = await fetch('/api/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(lastReport)
+      body: JSON.stringify({ ...lastReport, pdfBase64 })
     });
     const data = await resp.json();
     if (data.success) {
@@ -924,7 +953,14 @@ function downloadPDF() {
     margin: 10,
     filename,
     image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, backgroundColor: '#0f0f0f', useCORS: true, logging: false },
+    html2canvas: {
+      scale: 2,
+      backgroundColor: '#0f0f0f',
+      useCORS: true,
+      logging: false,
+      scrollY: -window.scrollY,
+      windowWidth: document.documentElement.offsetWidth
+    },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   }).from(el).save().then(() => {
     btn.disabled = false;
